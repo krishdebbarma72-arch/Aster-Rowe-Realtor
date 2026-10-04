@@ -28,7 +28,7 @@ export async function deliverEnquiry(payload: EnquiryPayload, config: EnquiryCon
 /** No persistence or logging. Demo submissions never invoke the delivery adapter. */
 export async function submitEnquiry(input: unknown, config: EnquiryConfig, transport: typeof fetch = fetch) {
   const result = validateEnquiry(input);
-  if (!result.valid) return { status: 400, body: { ok: false, errors: result.errors, message: "Please check the highlighted fields." } };
+  if ("errors" in result) return { status: 400, body: { ok: false, errors: result.errors, message: "Please check the highlighted fields." } };
   if (config.mode === "demo") return { status: 200, body: { ok: true, mode: "demo", message: previewComplete } };
   try {
     await deliverEnquiry(result.payload, config, transport);

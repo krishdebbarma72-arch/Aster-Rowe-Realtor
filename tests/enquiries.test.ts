@@ -38,14 +38,15 @@ test("all four payloads trim fields and retain only relevant validated values", 
 test("required fields, unsupported intents, invalid references and length limits fail server validation", () => {
   const empty = validateEnquiry({ intent: "general" });
   assert.ok(!empty.valid);
+  assert.ok("errors" in empty);
   assert.deepEqual(Object.keys(empty.errors), ["fullName", "email", "message"]);
   for (const [field, value] of [["email", "invalid"], ["email", "a@b"], ["fullName", "x".repeat(121)], ["message", "x".repeat(5001)], ["phone", "x".repeat(51)], ["intent", "unsupported"], ["subject", "invalid"]] as const) {
     const result = validateEnquiry({ ...general, [field]: value });
-    assert.ok(!result.valid && result.errors[field]);
+    assert.ok("errors" in result && result.errors[field]);
   }
   for (const intent of ["viewing", "question"]) {
     const result = validateEnquiry({ ...common, intent, property: "invented" });
-    assert.ok(!result.valid && result.errors.property);
+    assert.ok("errors" in result && result.errors.property);
   }
   assert.ok(!validateEnquiry(null).valid);
   assert.ok(!validateEnquiry({ ...general, email: ["visitor@example.test"] }).valid);
@@ -55,7 +56,7 @@ test("viewing dates must exist and not be past; unavailable viewing requests bec
   const base = { ...common, intent: "viewing", property: available.slug };
   for (const preferredDate of ["2029-12-31", "2030-02-30", "tomorrow"]) {
     const result = validateEnquiry({ ...base, preferredDate }, "2030-01-01");
-    assert.ok(!result.valid && result.errors.preferredDate);
+    assert.ok("errors" in result && result.errors.preferredDate);
   }
   assert.ok(validateEnquiry({ ...base, preferredDate: "2030-01-01" }, "2030-01-01").valid);
   assert.ok(!validateEnquiry({ ...base, preferredTime: "Midnight" }).valid);
@@ -134,7 +135,7 @@ test("missing or invalid live configuration and failed delivery return the same 
 });
 
 test("a stalled live transport is aborted within the bounded timeout and reports failure", { timeout: 12000 }, async () => {
-  const transport: typeof fetch = (_destination, init) => new Promise((_resolve, reject) => {
+  const transport: typeof fetch = (_destination, init) => new Promise<Response>((_resolve, reject) => {
     const keepAlive = setTimeout(() => reject(new Error("Timeout did not abort")), 11000);
     init!.signal!.addEventListener("abort", () => { clearTimeout(keepAlive); reject(init!.signal!.reason); }, { once: true });
   });
