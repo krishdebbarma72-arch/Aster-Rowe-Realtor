@@ -49,7 +49,7 @@ export function EnquiryForm({ intent, property, mode, today }: { intent: Enquiry
     if (submitting.current) return;
     const result = validateEnquiry({ ...values, intent, property });
     setDeliveryError("");
-    if (!result.valid) { showErrors(result.errors); return; }
+    if ("errors" in result) { showErrors(result.errors); return; }
     setErrors({});
     setValues((current) => Object.fromEntries(Object.keys(current).map((key) => [key, current[key as EnquiryField].trim()])) as Record<EnquiryField, string>);
     if (mode === "demo") {
